@@ -1,0 +1,211 @@
+<!-- WOODcraft -->  
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎬 Lecture Video player</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            text-align: center; 
+            background: #f4f4f4; 
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* ভিডিও সিলেকশন ড্রপডাউন */
+        #videoSelect {
+            width: 80%; /* প্রস্থ ৮০% করা */
+            max-width: 400px; /* সর্বোচ্চ প্রস্থ */
+            padding: 8px; /* ভিতরের স্পেস */
+            font-size: 16px; /* ফন্ট সাইজ */
+            border: 1px solid #ccc; /* বর্ডার */
+            border-radius: 5px; /* গোলাকার কোণা */
+            background: white;
+            margin: 10px auto; /* সেন্টারে রাখা */
+            display: block;
+        }
+
+        /* ভিডিও কন্টেইনার */
+        .video-container {
+            width: 90%; /* মোবাইল ও ডেস্কটপের জন্য রেস্পন্সিভ */
+            max-width: 600px;
+            background: #fff;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.2);
+            transform: perspective(1000px) rotateX(5deg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        iframe { 
+            width: 100%;
+            height: 350px; 
+            border: none; 
+            border-radius: 5px;
+        }
+
+        /* বাটন কন্টেইনার */
+        .button-container {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap; /* মোবাইল ভিউতে ভালো দেখাবে */
+        }
+
+        button { 
+            padding: 10px 15px; 
+            font-size: 16px; 
+            border: none; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            transition: 0.3s;
+        }
+
+        #prevBtn { background: #007bff; color: white; }
+        #nextBtn { background: #28a745; color: white; }
+
+        /* হোভার ইফেক্ট */
+        button:hover {
+            opacity: 0.8;
+        }
+
+        /* ফুটার ডিজাইন */
+        .footer {
+            margin-top: 30px;
+            background: #222;
+            color: white;
+            padding: 10px;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .footer a {
+            color: #00c3ff;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* মোবাইল ভিউ */
+        @media (max-width: 600px) {
+            iframe {
+                height: 250px; /* মোবাইলে উচ্চতা কমিয়ে দেওয়া */
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h2>🎬 Video player</h2>
+
+    <!-- ভিডিও সিলেকশন ড্রপডাউন -->
+    <select id="videoSelect"></select>
+
+    <!-- ভিডিও কন্টেইনার -->
+    <div class="video-container">
+        <iframe id="videoFrame"></iframe>
+    </div>
+
+    <!-- বাটন কন্টেইনার -->
+    <div class="button-container">
+        <button id="prevBtn">⏪ Previous</button>
+        <button id="nextBtn">⏩ Next</button>
+    </div>
+
+    <!-- ফুটার -->
+    <div class="footer">
+        Developed by <a href="https://t.me/Farooq_is_king" target="_blank">𝐖𝐎𝐎𝐃𝐜𝐫𝐚𝐟𝐭</a>
+    </div>
+
+    <script>
+        let videos = [];
+        let currentIndex = 0;
+        let videoFrame = document.getElementById("videoFrame");
+        let selectElement = document.getElementById("videoSelect");
+
+// `videos.txt` ফাইল থেকে ভিডিও লোড করা
+function loadVideos(callback = null) {
+    fetch("videos.txt")
+        .then(response => response.text())
+        .then(data => {
+            let newVideos = [];
+            let lines = data.split("\n"); // লাইনভিত্তিক আলাদা করা
+            lines.forEach(line => {
+                let [url, title] = line.split("|").map(item => item.trim());
+                if (url && title) newVideos.push({ url, title });
+            });
+
+            // যদি ভিডিও লিস্ট পরিবর্তন হয়, তবে আপডেট করো
+            if (JSON.stringify(newVideos) !== JSON.stringify(videos)) {
+                videos = newVideos;
+
+                // ড্রপডাউন খালি করো
+                selectElement.innerHTML = ""; 
+
+                // ড্রপডাউন তৈরি করা
+                videos.forEach((video, index) => {
+                    let option = document.createElement("option");
+                    option.value = index;
+                    option.textContent = video.title;
+                    selectElement.appendChild(option);
+                });
+
+                // যদি আগের ভিডিও লিস্টের ইনডেক্স বিদ্যমান থাকে, সেটাকে রিস্টোর করো
+                if (currentIndex >= videos.length) {
+                    currentIndex = 0; // যদি নতুন লিস্টে আগের ভিডিও না থাকে, তাহলে প্রথম ভিডিও চালাও
+                }
+
+                // সঠিক ভিডিও প্লে করো
+                videoFrame.src = videos[currentIndex].url;
+                selectElement.value = currentIndex;
+            }
+
+            if (callback) callback();
+        });
+}
+
+loadVideos(); // প্রথমবার ভিডিও লোড করো
+
+// প্রতি ৩০ সেকেন্ড পর নতুন ভিডিও যুক্ত হচ্ছে কিনা চেক করো, কিন্তু বর্তমান ভিডিও বন্ধ করো না
+setInterval(() => loadVideos(() => {
+    if (videos.length > 0) {
+        selectElement.value = currentIndex;
+    }
+}), 30000);
+
+// ড্রপডাউন থেকে ভিডিও পরিবর্তন
+selectElement.addEventListener("change", function() {
+    currentIndex = parseInt(this.value);
+    videoFrame.src = videos[currentIndex].url;
+});
+
+// Next Button
+document.getElementById("nextBtn").addEventListener("click", function() {
+    currentIndex = (currentIndex + 1) % videos.length;
+    videoFrame.src = videos[currentIndex].url;
+    selectElement.value = currentIndex;
+});
+
+// Previous Button
+document.getElementById("prevBtn").addEventListener("click", function() {
+    currentIndex = (currentIndex - 1 + videos.length) % videos.length;
+    videoFrame.src = videos[currentIndex].url;
+    selectElement.value = currentIndex;
+});
+    </script>
+
+</body>
+      </html>
